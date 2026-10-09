@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>X Feed Filter</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header>
+    <h1>X Feed Filter</h1>
+    <div class="toggles">
+      <label class="switch">
+        <input type="checkbox" id="enabled" />
+        <span>Enabled</span>
+      </label>
+      <label class="switch">
+        <input type="checkbox" id="paused" />
+        <span>Pause</span>
+      </label>
+    </div>
+  </header>
+
+  <p id="status" class="status" role="status"></p>
+
+  <section>
+    <h2>Locations</h2>
+    <div class="row">
+      <select id="locationMode" title="Location filter mode">
+        <option value="hide">Hide posts from these locations</option>
+        <option value="only">Only show posts from these locations</option>
+      </select>
+    </div>
+    <p class="hint" id="locationModeHint">Posts hide when the author's profile location matches.</p>
+    <div class="row">
+      <input type="text" id="locationInput" list="locationPresets" placeholder="e.g. Karachi (autocomplete ↓)" />
+      <select id="locationMatch" title="Match mode">
+        <option value="contains">contains</option>
+        <option value="equals">equals</option>
+      </select>
+      <button id="addLocation">Add</button>
+    </div>
+    <datalist id="locationPresets"></datalist>
+    <ul id="locationList" class="list"></ul>
+  </section>
+
+  <section>
+    <h2>Follower count</h2>
+    <p class="hint">Hide authors whose followers fall inside this range.</p>
+    <div class="row range">
+      <label class="switch">
+        <input type="checkbox" id="followersEnabled" />
+        <span>Filter</span>
+      </label>
+      <label>min <input type="number" id="followersMin" min="0" placeholder="—" /></label>
+      <label>max <input type="number" id="followersMax" min="0" placeholder="—" /></label>
+    </div>
+  </section>
+
+  <section>
+    <h2>Following count</h2>
+    <p class="hint">Hide authors whose following falls inside this range.</p>
+    <div class="row range">
+      <label class="switch">
+        <input type="checkbox" id="followingEnabled" />
+        <span>Filter</span>
+      </label>
+      <label>min <input type="number" id="followingMin" min="0" placeholder="—" /></label>
+      <label>max <input type="number" id="followingMax" min="0" placeholder="—" /></label>
+    </div>
+  </section>
+
+  <section>
+    <h2>Accounts to hide</h2>
+    <div class="row">
+      <input type="text" id="accountInput" placeholder="@handle" />
+      <button id="addAccount">Add</button>
+    </div>
+    <ul id="accountList" class="list"></ul>
+  </section>
+
+  <section>
+    <h2>Keywords to hide</h2>
+    <label class="switch">
+      <input type="checkbox" id="caseSensitive" />
+      <span>Case sensitive</span>
+    </label>
+    <div class="row">
+      <input type="text" id="keywordInput" placeholder="word or phrase" />
+      <button id="addKeyword">Add</button>
+    </div>
+    <ul id="keywordList" class="list"></ul>
+  </section>
+
+  <section>
+    <h2>Diagnostics</h2>
+    <p class="hint">Location &amp; follower rules work per author only after their profile is cached. Scroll the feed once after installing or clearing.</p>
+    <div id="diagnostics" class="diag"></div>
+    <div class="row" style="margin-top:6px">
+      <input type="text" id="testHandle" placeholder="@handle to test" />
+      <button id="testFetch">Test fetch</button>
+    </div>
+    <pre id="testOut" class="test-out" hidden></pre>
+  </section>
+
+  <footer>
+    <span id="hiddenCount" title="Posts hidden this session">Hidden: 0</span>
+    <button id="clearCache" class="danger" title="Refetch profiles that were cached">Clear profile cache</button>
+  </footer>
+
+  <script src="locations-data.js"></script>
+  <script src="settings.js"></script>
+  <script src="profile-cache.js"></script>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "X Feed Filter",
+  "version": "1.0.0",
+  "description": "Filter posts from your X feed by location, followers, following, account, and keywords.",
+  "permissions": ["storage"],
+  "host_permissions": ["https://x.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://x.com/*"],
+      "js": [
+        "settings.js",
+        "profile-cache.js",
+        "filter.js",
+        "analyzer.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "X Feed Filter"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

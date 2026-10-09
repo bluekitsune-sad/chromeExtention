@@ -1,0 +1,34 @@
+/* styles.css — hiding strategy.
+ * Hard rule (AGENTS.md #3): never element.remove() X feed nodes — the feed is
+ * a virtualized list and removing nodes breaks recycling/scrolling.
+ * We collapse the post to zero height instead.
+ */
+
+.xff-hidden,
+.xff-hidden article {
+  height: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  margin: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  overflow: hidden !important;
+  visibility: hidden !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* The list item wrapper around the article — collapse it too so no gap remains. */
+div[role="listItem"]:has(> .xff-hidden),
+div[role="listItem"]:has(.xff-hidden) {
+  height: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  visibility: hidden !important;
+  border: 0 !important;
+  opacity: 0 !important;
+}
