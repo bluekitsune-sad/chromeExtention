@@ -19,9 +19,13 @@ Instructions for any AI agent (or human) implementing the extension defined in
 2. **Read-only DOM.** Never `remove()`, `append`, `innerHTML`, focus, click,
    or keypress into the X page. Only `scrollTop` manipulation (and only during
    history loading), restoring the original scroll position afterwards.
-3. **No new permissions.** MV3, `host_permissions: ["https://x.com/*"]` only.
-   Downloads happen in the popup via blob + `<a download>` — never the
-   `downloads` API. No `storage`, no `tabs`, no background worker.
+3. **Minimal permissions.** MV3: `host_permissions: ["https://x.com/*"]` plus
+   `permissions: ["scripting"]` — the popup injects the content scripts on
+   demand when a tab predates an extension reload (stale-tab fix). The
+   content script MUST keep its `__CE_CONTENT_LOADED__` guard so re-injection
+   can never double-register listeners. Downloads happen in the popup via
+   blob + `<a download>` — never the `downloads` API. No `storage`, no
+   `tabs`, no background worker.
 4. **`organize.js` stays pure and DOM-free.** It must load and run in Node
    without stubs beyond `globalThis`. Every schema rule (dedupe, sort,
    undated-last, caption rule, participants, stats) lives there and is

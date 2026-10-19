@@ -3,6 +3,7 @@
   "name": "Chat Exporter (X DMs → JSON)",
   "version": "1.0.0",
   "description": "Export an X DM conversation as sorted, organized JSON. Media become img/gif/vid placeholders — no files are stored.",
+  "permissions": ["scripting"],
   "host_permissions": ["https://x.com/*"],
   "content_scripts": [
     {

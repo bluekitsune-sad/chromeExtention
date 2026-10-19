@@ -5,6 +5,12 @@
 (function () {
   "use strict";
 
+  // Idempotency guard: this file may be injected on demand by the popup
+  // (chrome.scripting) even when a copy is already registered — listeners
+  // must never be registered twice (it would double-run every export).
+  if (globalThis.__CE_CONTENT_LOADED__) return;
+  globalThis.__CE_CONTENT_LOADED__ = true;
+
   const MAX_ROUNDS = 600;
   const MAX_ENTRIES = 50000;
   const HARD_TIMEOUT_MS = 10 * 60 * 1000;

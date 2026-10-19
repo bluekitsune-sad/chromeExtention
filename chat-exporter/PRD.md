@@ -140,7 +140,7 @@ read, diff, search, or feed into other tools.
 
 ```
 chat-exporter/
-├── manifest.json      MV3 — host x.com, content script on /messages*
+├── manifest.json      MV3 — host x.com, scripting; content script on /i/chat* + on-demand inject
 ├── popup.html/css/js  Export button, progress, summary, download trigger
 ├── content.js         Orchestrator: probe → load history → extract → organize
 ├── extract.js         DOM → raw message objects (thin; ordered selector lists)
@@ -177,10 +177,13 @@ needed and it ties to the button's user gesture.
 
 ### Manifest permissions
 
-`host_permissions: ["https://x.com/*"]` only. No `storage`, no `downloads`,
+Permissions: `host_permissions: ["https://x.com/*"]` plus
+`permissions: ["scripting"]` — the popup injects the content scripts on
+demand (chrome.scripting) when the active tab predates an extension reload,
+so stale tabs never break exports. No `storage`, no `downloads`,
 no `tabs`, no background worker. Content script matches `https://x.com/i/chat*`
 and legacy `https://x.com/messages*`. The conversation id is read from the
-URL path (`/i/chat/<id>`) — no extra permission needed.
+URL path (`/i/chat/<id>`).
 
 ---
 

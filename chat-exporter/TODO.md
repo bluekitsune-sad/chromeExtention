@@ -4,14 +4,14 @@ Work top-down; check off as done. Specs in `PRD.md`, rules in `AGENTS.md`.
 
 **Status (2026-10-19): M1–M5 code-complete (targets `https://x.com/i/chat`, conversation id captured from URL).
 Automated checks: 29/29 unit tests, all JS syntax-clean.
-Bugfix: popup now pings the content script first — stale tabs (loaded before
-the extension was reloaded) get "reload the extension, then this tab" instead
-of "connection lost".
+Bugfix: popup now pings the content script first and injects it on demand
+(`chrome.scripting`) — stale tabs self-heal, no tab reload needed after
+extension reloads.
 Remaining: M6 manual QA in a logged-in Chrome session.**
 
 ## M1 — Scaffold — ✅
 - [x] `chat-exporter/` folder + docs (PRD/TODO/AGENTS)
-- [x] `manifest.json` (MV3, host `x.com`, content script on `/messages*`, popup only)
+- [x] `manifest.json` (MV3, host `x.com`, `scripting` permission for on-demand inject, content script on `/i/chat*` + `/messages*`, popup only)
 - [x] Icons (16/48/128)
 - [ ] **Manual:** load unpacked, icon opens popup on `x.com/messages`
 
@@ -47,7 +47,11 @@ Remaining: M6 manual QA in a logged-in Chrome session.**
 - [x] blob download `x-dm_<sanitized>_<YYYY-MM-DD>.json`
 - [x] summary after export (count, date range)
 - [x] error display (no entries found, aborted, wrong tab, stale-tab ping)
-- [x] auto-detects wrong tab (disabled button + hint)
+- [x] popup pings content script; missing script → on-demand injection via
+      `chrome.scripting` (stale tabs auto-heal; `__CE_CONTENT_LOADED__` guard
+      prevents double registration)
+- [x] auto-detects wrong tab (disabled button + hint); Ready status shows the
+      current page URL
 
 ## M6 — QA & docs
 - [x] Automated: `node --check` all JS; `node test\organize.test.js`

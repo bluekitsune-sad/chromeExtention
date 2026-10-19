@@ -97,19 +97,36 @@
 
   // --------------------------------------------------------------- start
 
-  // Content scripts only exist in tabs that were (re)loaded AFTER the
-  // extension loaded — probe first so a stale tab gets an actionable error
-  // instead of an instant port disconnect.
-  function ping(tabId, onReady) {
+  // Content scripts normally pre-inject on /i/chat, but a tab opened before
+  // the extension was (re)loaded has none — inject the scripts on demand via
+  // chrome.scripting instead of failing. allowInject caps it to one attempt.
+  function ping(tabId, onReady, allowInject) {
     chrome.tabs.sendMessage(tabId, { type: "chat-exporter-ping" }, (res) => {
       if (chrome.runtime.lastError || !res || !res.ok) {
-        fail(
-          "Content script isn't active in this tab yet — click ⟳ reload on the extension in chrome://extensions, then reload this tab and export again."
-        );
+        if (allowInject) inject(tabId, onReady);
+        else fail("Content script couldn't attach — reload https://x.com/i/chat once and retry.");
         return;
       }
       onReady();
     });
+  }
+
+  function inject(tabId, onReady) {
+    if (!chrome.scripting || !chrome.scripting.executeScript) {
+      fail("Extension needs one reload for a new permission: click ⟳ in chrome://extensions, then export again.");
+      return;
+    }
+    setStatus("Attaching to page…");
+    chrome.scripting.executeScript(
+      { target: { tabId }, files: ["organize.js", "extract.js", "content.js"] },
+      () => {
+        if (chrome.runtime.lastError) {
+          fail("Couldn't attach to this tab: " + chrome.runtime.lastError.message);
+          return;
+        }
+        setTimeout(() => ping(tabId, onReady, false), 150);
+      }
+    );
   }
 
   function startExport(tabId) {
@@ -179,14 +196,15 @@
           return;
         }
         setStatus("Checking page…");
-        ping(tab.id, () => startExport(tab.id));
+        ping(tab.id, () => startExport(tab.id), true);
       });
     });
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const tab = tabs && tabs[0];
       if (tab && isChatPage(tab.url)) {
-        setStatus("Ready — open the conversation you want to export.", "ok");
+        const short = tab.url.replace(/^https:\/\//, "").split("?")[0];
+        setStatus("Ready — " + (short.length > 60 ? short.slice(0, 60) + "…" : short), "ok");
         $("export").disabled = false;
       } else {
         setStatus("Open an X chat: https://x.com/i/chat", "err");
