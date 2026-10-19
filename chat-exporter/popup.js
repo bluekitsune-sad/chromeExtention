@@ -97,6 +97,21 @@
 
   // --------------------------------------------------------------- start
 
+  // Content scripts only exist in tabs that were (re)loaded AFTER the
+  // extension loaded — probe first so a stale tab gets an actionable error
+  // instead of an instant port disconnect.
+  function ping(tabId, onReady) {
+    chrome.tabs.sendMessage(tabId, { type: "chat-exporter-ping" }, (res) => {
+      if (chrome.runtime.lastError || !res || !res.ok) {
+        fail(
+          "Content script isn't active in this tab yet — click ⟳ reload on the extension in chrome://extensions, then reload this tab and export again."
+        );
+        return;
+      }
+      onReady();
+    });
+  }
+
   function startExport(tabId) {
     stopPort();
     $("export").disabled = true;
@@ -143,7 +158,7 @@
     port.onDisconnect.addListener(() => {
       // content script gone (navigation/reload) without a result
       clearTimeout(watchdog);
-      fail("Connection to the page was lost — reload x.com/messages and retry.");
+      fail("Connection to the page was lost — the tab reloaded or navigated. Open https://x.com/i/chat again and retry.");
     });
     port.postMessage({ type: "start" });
     resetWatchdog();
@@ -163,7 +178,8 @@
           fail("Open an X chat first: https://x.com/i/chat");
           return;
         }
-        startExport(tab.id);
+        setStatus("Checking page…");
+        ping(tab.id, () => startExport(tab.id));
       });
     });
 

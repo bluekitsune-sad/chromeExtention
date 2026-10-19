@@ -4,6 +4,9 @@ Work top-down; check off as done. Specs in `PRD.md`, rules in `AGENTS.md`.
 
 **Status (2026-10-19): M1–M5 code-complete (targets `https://x.com/i/chat`, conversation id captured from URL).
 Automated checks: 29/29 unit tests, all JS syntax-clean.
+Bugfix: popup now pings the content script first — stale tabs (loaded before
+the extension was reloaded) get "reload the extension, then this tab" instead
+of "connection lost".
 Remaining: M6 manual QA in a logged-in Chrome session.**
 
 ## M1 — Scaffold — ✅
@@ -43,7 +46,7 @@ Remaining: M6 manual QA in a logged-in Chrome session.**
 - [x] live progress ("loading history… 1200 messages")
 - [x] blob download `x-dm_<sanitized>_<YYYY-MM-DD>.json`
 - [x] summary after export (count, date range)
-- [x] error display (no entries found, aborted, not on /messages)
+- [x] error display (no entries found, aborted, wrong tab, stale-tab ping)
 - [x] auto-detects wrong tab (disabled button + hint)
 
 ## M6 — QA & docs

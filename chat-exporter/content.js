@@ -125,6 +125,15 @@
     }
   }
 
+  // Lets the popup verify this tab actually has the content script before
+  // starting an export (tabs opened before the extension was loaded/reloaded
+  // don't get the script injected).
+  chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+    if (msg && msg.type === "chat-exporter-ping") {
+      sendResponse({ ok: true });
+    }
+  });
+
   chrome.runtime.onConnect.addListener((port) => {
     if (port.name !== "export") return;
     port.onMessage.addListener((msg) => {

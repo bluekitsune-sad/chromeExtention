@@ -57,6 +57,11 @@ Rules (full spec in `PRD.md`):
 
 If an export finds nothing or senders are `null`:
 
+0. **"Content script isn't active in this tab yet"** — content scripts don't
+   inject into tabs opened *before* the extension loaded. Click ⟳ reload on
+   the extension in `chrome://extensions`, then **reload the x.com tab** and
+   export again.
+
 1. Set `localStorage.CE_DEBUG = "1"` in the x.com console → `[CE]` logs.
 2. Check the export's `diagnostics.probes` — `entries` is how many message
    nodes the selector probe found.
