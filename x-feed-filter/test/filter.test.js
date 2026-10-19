@@ -6,8 +6,8 @@ const assert = require("node:assert");
 
 // Minimal stub so filter.js's fail-open logger works outside the browser.
 globalThis.XFF = { settings: { debug: () => {} } };
-require("../x-feed-filter/filter.js");
-require("../x-feed-filter/profile-cache.js");
+require("../filter.js");
+require("../profile-cache.js");
 
 const { filter, profileCache } = globalThis.XFF;
 

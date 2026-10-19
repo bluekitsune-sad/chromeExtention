@@ -8,7 +8,7 @@ const path = require("node:path");
 const assert = require("node:assert");
 
 globalThis.XFF = { settings: { debug: () => {} } };
-require("../x-feed-filter/profile-cache.js");
+require("../profile-cache.js");
 const { profileCache } = globalThis.XFF;
 
 // expected: [handle, location, followersMin?] from the captured pages

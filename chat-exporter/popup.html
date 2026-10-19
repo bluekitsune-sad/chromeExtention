@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Chat Exporter</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header>
+    <h1>Chat Exporter</h1>
+    <p class="sub">X DMs → sorted JSON · media become img / gif / vid</p>
+  </header>
+
+  <p id="status" class="status" role="status">Checking current tab…</p>
+  <p id="progress" class="progress" hidden></p>
+  <p id="summary" class="summary" hidden></p>
+
+  <button id="export" disabled>Export this conversation</button>
+
+  <footer>
+    Saves everything locally. No media files are ever stored — only the
+    placeholders <code>img</code>, <code>gif</code>, <code>vid</code>.
+  </footer>
+
+  <script src="organize.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

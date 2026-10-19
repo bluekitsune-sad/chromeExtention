@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Chat Exporter (X DMs → JSON)",
+  "version": "1.0.0",
+  "description": "Export an X DM conversation as sorted, organized JSON. Media become img/gif/vid placeholders — no files are stored.",
+  "host_permissions": ["https://x.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://x.com/messages*"],
+      "js": ["organize.js", "extract.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Export this DM conversation"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
