@@ -5,7 +5,10 @@ Work top-down; check off as done. Specs in `PRD.md`, rules in `AGENTS.md`.
 **Status (2026-10-19): M1–M5 code-complete (targets `https://x.com/i/chat`, conversation id captured from URL).
 Entry detection: fixed selector candidates → runtime auto-discovery fallback;
 zero-entry failures now report the page's DOM vocabulary.
-Automated checks: 29/29 unit tests, all JS syntax-clean.
+Live DOM report showed the top frame holding only app chrome → multi-frame
+support: `all_frames` injection, per-frame results, `mergeDocuments()` in the
+popup. Conversation-id regex widened for the real 39-char `userA-userB` DM ids.
+Automated checks: 34/34 unit tests, all JS syntax-clean.
 Bugfix: popup now pings the content script first and injects it on demand
 (`chrome.scripting`) — stale tabs self-heal, no tab reload needed after
 extension reloads.
@@ -25,6 +28,9 @@ Remaining: M6 manual QA in a logged-in Chrome session.**
 - [x] `organize.js`: document builder (schema/stats/diagnostics/participants)
 - [x] `organize.js`: filename sanitizer
 - [x] `test/organize.test.js` — covers all rules incl. multi-media `img + vid`
+- [x] `organize.js`: `mergeDocuments()` — multi-frame union (dedupe across
+      frames, re-sorted, stats/participants recomputed, leader = most
+      messages); covered by 4 tests
 
 ## M3 — DOM extraction — ✅
 - [x] `extract.js`: ordered selector candidates per touchpoint (PRD §6)
@@ -47,6 +53,9 @@ Remaining: M6 manual QA in a logged-in Chrome session.**
 - [x] scroll position restored after export
 - [x] extract → organize → respond `{ok, doc}` / `{ok:false, error}`
 - [x] `CE_DEBUG` gated logging
+- [x] multi-frame protocol: `all_frames: true`; empty frames post
+      `frame-empty` + DOM report instead of failing (X can render chat in
+      an iframe)
 
 ## M5 — Popup — ✅
 - [x] Export button + conversation status line
@@ -59,12 +68,15 @@ Remaining: M6 manual QA in a logged-in Chrome session.**
       prevents double registration)
 - [x] auto-detects wrong tab (disabled button + hint); Ready status shows the
       current page URL
+- [x] multi-frame settle & merge: waits for sibling frames' results, merges
+      non-empty docs ("merged from N frames"), aggregates per-frame DOM
+      reports into the final error
 
 ## M6 — QA & docs
 - [x] Automated: `node --check` all JS; `node test\organize.test.js`
 - [x] README with load-unpacked steps
 - [ ] **Manual (logged-in Chrome — open chats via `https://x.com/i/chat`):**
-  - [ ] `/i/chat/<id>` conversation opens → popup shows "Ready", id present in exported `conversation.id`
+  - [ ] `/i/chat/<id>` conversation opens → popup shows "Ready", id present in exported `conversation.id` (incl. real DM pair ids like `1868…-1958…`)
   - [ ] 1:1 chat export: correct sender attribution, chronological order
   - [ ] image message → `"img"`; GIF → `"gif"`; video → `"vid"`; no media in Network tab from extension
   - [ ] media + caption message → placeholder in `text`, words in `caption`

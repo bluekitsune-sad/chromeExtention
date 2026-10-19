@@ -28,8 +28,9 @@ Instructions for any AI agent (or human) implementing the extension defined in
    `tabs`, no background worker.
 4. **`organize.js` stays pure and DOM-free.** It must load and run in Node
    without stubs beyond `globalThis`. Every schema rule (dedupe, sort,
-   undated-last, caption rule, participants, stats) lives there and is
-   covered by `test/organize.test.js` — keep it green, extend when rules grow.
+   undated-last, caption rule, participants, stats — and the multi-frame
+   `mergeDocuments()`) lives there and is covered by
+   `test/organize.test.js` — keep it green, extend when rules grow.
 5. **Ordered selector candidates.** All DOM selectors live in `recorded
    probe lists` in `extract.js` (arrays, first match wins). Never scatter
    `querySelector` calls through `content.js`. Record match counts for

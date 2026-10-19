@@ -45,7 +45,7 @@
   // (the DM home is https://x.com/i/chat; opening a DM adds its id to the path)
   function conversationIdFromPath(pathname) {
     if (typeof pathname !== "string") return null;
-    const m = pathname.match(/^\/(?:i\/chat|messages)\/([A-Za-z0-9_-]{1,30})/);
+    const m = pathname.match(/^\/(?:i\/chat|messages)\/([A-Za-z0-9_-]{1,64})/);
     return m ? m[1] : null;
   }
 
@@ -243,6 +243,44 @@
       }
     } catch (_) {
       /* ignore */
+    }
+    // Are the messages hiding in an iframe? (X's newer /i/chat does this.)
+    try {
+      const iframes = doc.querySelectorAll("iframe");
+      parts.push("iframes=" + iframes.length);
+      let i = 0;
+      for (const fr of iframes) {
+        if (i >= 3) break;
+        const src = fr.getAttribute("src") || "";
+        let host = src || "(none)";
+        try {
+          host = src ? new URL(src, location.href).host : "(none)";
+        } catch (_) {
+          /* keep raw */
+        }
+        parts.push("iframe" + i + ":" + host);
+        i += 1;
+      }
+    } catch (_) {
+      /* ignore */
+    }
+    // Shadow DOM hosts (querySelectorAll cannot pierce them) + sizes.
+    try {
+      const all = doc.querySelectorAll("*");
+      let shadow = 0;
+      for (let i = 0; i < all.length && i < 5000; i++) if (all[i].shadowRoot) shadow += 1;
+      parts.push("elements=" + all.length + ",shadowHosts=" + shadow);
+    } catch (_) {
+      /* ignore */
+    }
+    // Is chat text present at all in this frame? Lengths only — never content.
+    for (const sel of ["main", '[data-testid="primaryColumn"]']) {
+      try {
+        const el = doc.querySelector(sel);
+        if (el) parts.push(sel + ".textLen=" + (el.innerText || "").length);
+      } catch (_) {
+        /* ignore */
+      }
     }
     return parts.join(" | ");
   }

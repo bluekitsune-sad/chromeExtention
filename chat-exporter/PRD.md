@@ -175,6 +175,27 @@ popup [Export] ──port──▶ content.js
 Download happens in the **popup** (blob anchor) — no `downloads` permission
 needed and it ties to the button's user gesture.
 
+### Multi-frame (X renders chat content in iframes)
+
+X's `/i/chat` can host the conversation inside an **iframe** — evidence from
+a live DOM report showed the top frame carrying only app chrome while the
+user saw messages. The pipeline therefore runs in **every frame**
+(`all_frames: true`, injection via `allFrames: true` with a top-frame-only
+fallback):
+
+1. Every frame with content scripts runs the export pipeline on the popup's
+   `start` broadcast.
+2. A frame that finds **no message entries** posts `frame-empty` with its DOM
+   report instead of failing; a frame that succeeds posts `done` + its doc.
+3. The popup waits a short settle window (2.5 s, shortened to 1.5 s after
+   the first non-empty doc), then:
+   - any non-empty docs → **`mergeDocuments()`** (pure, in `organize.js`):
+     concat, dedupe across frames, re-sort, recompute stats/participants;
+     the frame with the most messages is the metadata leader. The summary
+     notes "merged from N frames".
+   - no docs at all → single error whose `Report:` joins every frame's DOM
+     report — the diagnosis covers all frames at once.
+
 ### Manifest permissions
 
 Permissions: `host_permissions: ["https://x.com/*"]` plus

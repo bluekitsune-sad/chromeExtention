@@ -137,6 +137,70 @@
     };
   }
 
+  // Merge export documents produced by different frames of the same tab
+  // (the chat may render inside an iframe). Pure + deterministic: messages
+  // concatenated, deduped across frames, re-sorted; stats/participants
+  // recomputed; the frame with the most messages is the "leader" for
+  // conversation metadata. Returns null when no frame had messages.
+  function mergeDocuments(docs) {
+    const list = (docs || []).filter((d) => d && Array.isArray(d.messages) && d.messages.length);
+    if (!list.length) return null;
+
+    let leader = list[0];
+    for (const d of list) {
+      const n = d.stats && typeof d.stats.messageCount === "number" ? d.stats.messageCount : 0;
+      const ln = leader.stats && typeof leader.stats.messageCount === "number" ? leader.stats.messageCount : 0;
+      if (n > ln) leader = d;
+    }
+
+    const concat = [];
+    for (const d of list) concat.push(...d.messages);
+    const { messages: deduped, removed } = dedupe(concat);
+    const sorted = sortMessages(deduped);
+    const dated = sorted.filter((m) => m.timestamp !== null);
+
+    const participants = new Set();
+    for (const m of sorted) if (m.sender) participants.add(m.sender);
+    const lconv = leader.conversation || {};
+    const handle = titleHandle(lconv.title);
+    if (handle) participants.add(handle);
+    const people = [...participants].sort();
+
+    const probes = {};
+    let innerDupes = 0;
+    for (const d of list) {
+      const p = (d.diagnostics && d.diagnostics.probes) || {};
+      for (const k of Object.keys(p)) {
+        if (typeof p[k] === "number") probes[k] = (probes[k] || 0) + p[k];
+      }
+      const dd = d.diagnostics && d.diagnostics.duplicatesRemoved;
+      if (typeof dd === "number") innerDupes += dd;
+    }
+
+    return {
+      schema: SCHEMA,
+      exportedAt: new Date().toISOString(),
+      source: leader.source || null,
+      conversation: {
+        id: lconv.id || null,
+        title: lconv.title || null,
+        participants: people,
+        kind: people.length >= 3 ? "group" : people.length >= 1 ? "1:1" : "unknown"
+      },
+      stats: {
+        messageCount: sorted.length,
+        first: dated.length ? dated[0].timestamp : null,
+        last: dated.length ? dated[dated.length - 1].timestamp : null
+      },
+      diagnostics: {
+        probes,
+        undatedMessages: sorted.length - dated.length,
+        duplicatesRemoved: removed + innerDupes
+      },
+      messages: sorted
+    };
+  }
+
   // filename part: lowercase, [a-z0-9-], collapsed, capped 60, safe fallback
   function sanitizeFilenamePart(s) {
     const base = String(s || "")
@@ -165,6 +229,7 @@
     dedupe,
     sortMessages,
     buildDocument,
+    mergeDocuments,
     sanitizeFilenamePart,
     exportFilename,
     debug

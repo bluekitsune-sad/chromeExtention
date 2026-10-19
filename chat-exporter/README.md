@@ -67,10 +67,13 @@ If an export finds nothing or senders are `null`:
    nodes the selector probe found.
 3. X changes its DOM regularly. The extension tries fixed candidate selectors
    first, then **auto-discovers** the message-row selector from the live page
-   (how `time[datetime]` elements are wrapped). If both fail, the error
-   message contains a **`Report:`** line — the page's top `data-testid`s and
-   timestamp ancestor chains. Paste that report here/an issue: it's enough to
-   update the candidate lists in `extract.js` in one pass.
+   (how `time[datetime]` elements are wrapped), and runs in **every frame**
+   of the tab — X's `/i/chat` can render the conversation inside an iframe,
+   and the popup merges whichever frame had the messages. If all frames
+   fail, the error message contains a **`Report:`** line per frame — the
+   page's top `data-testid`s, iframe hosts, shadow-DOM counts and timestamp
+   ancestor chains. Paste that report here/an issue: it's enough to update
+   the candidate lists in `extract.js` in one pass.
 
 ## Tests
 
@@ -78,8 +81,8 @@ If an export finds nothing or senders are `null`:
 node test\organize.test.js
 ```
 
-29 dependency-free tests covering classification, dedupe, sorting, the
-document schema, conversation-id parsing, and filenames.
+34 dependency-free tests covering classification, dedupe, sorting, the
+document schema, conversation-id parsing, multi-frame merging, and filenames.
 
 ## Docs
 

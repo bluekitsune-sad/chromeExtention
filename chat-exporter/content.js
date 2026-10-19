@@ -100,16 +100,18 @@
     try {
       let entries = CE.extract.findEntries(document);
       if (!entries.length) {
+        // This frame has nothing (the chat may live in a sibling frame) —
+        // report emptiness instead of failing; the popup settles the result
+        // across all frames (PRD §5).
         let report = "";
         try {
           report = CE.extract.domReport(document);
-          console.error("[CE] no message entries found. DOM report:", report);
+          console.error("[CE] no message entries in this frame:", report);
         } catch (_) {
           /* report is best effort */
         }
-        throw new Error(
-          "No message bubbles were found — X's chat layout may have changed. Report: " + report
-        );
+        post(port, { type: "frame-empty", report: report || "(no report)" });
+        return;
       }
 
       post(port, { type: "progress", phase: "start", count: entries.length });

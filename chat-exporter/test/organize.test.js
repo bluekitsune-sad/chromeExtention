@@ -227,6 +227,12 @@ t("DM home without id → null", () => {
   assert.strictEqual(CE.extract.conversationIdFromPath("/i/chat"), null);
   assert.strictEqual(CE.extract.conversationIdFromPath("/i/chat/"), null);
 });
+t("real DM id pair (39-char userA-userB) survives", () => {
+  assert.strictEqual(
+    CE.extract.conversationIdFromPath("/i/chat/1868176518192504832-1958986718931222528"),
+    "1868176518192504832-1958986718931222528"
+  );
+});
 t("buildDocument carries meta.id into conversation.id", () => {
   const d = CE.buildDocument([{ sender: "@a", timestamp: null, text: "x", media: [] }], { id: "1234567890" });
   assert.strictEqual(d.conversation.id, "1234567890");
@@ -236,6 +242,63 @@ t("buildDocument carries meta.id into conversation.id", () => {
 t("filename falls back to conversation id when title missing", () => {
   const d = CE.buildDocument([], { id: "1234567890" });
   assert.match(CE.exportFilename(d), /^x-dm_1234567890_\d{4}-\d{2}-\d{2}\.json$/);
+});
+
+console.log("mergeDocuments — multi-frame merging");
+const frameA = CE.buildDocument(
+  [
+    { id: "m1", sender: "@alice", timestamp: "2026-01-01T00:00:00.000Z", text: "hello", media: [] },
+    { id: "m2", sender: "@bob", timestamp: "2026-01-02T00:00:00.000Z", text: "hi", media: [] }
+  ],
+  { source: "https://x.com/i/chat/42", id: "42", title: "Alice (@alice)", probes: { entries: 2 } }
+);
+const frameB = CE.buildDocument(
+  [
+    { id: "m2", sender: "@bob", timestamp: "2026-01-02T00:00:00.000Z", text: "hi", media: [] }, // overlap
+    { id: "m3", sender: "@carol", timestamp: "2026-01-03T00:00:00.000Z", text: "yo", media: [] }
+  ],
+  { probes: { entries: 2 } }
+);
+t("unions frames, dedupes across them, recomputes stats", () => {
+  const merged = CE.mergeDocuments([frameA, frameB]);
+  assert.strictEqual(merged.stats.messageCount, 3);
+  assert.strictEqual(merged.diagnostics.duplicatesRemoved, 1);
+  assert.deepStrictEqual(merged.messages.map((m) => m.id), ["m1", "m2", "m3"]);
+  assert.strictEqual(merged.stats.first, "2026-01-01T00:00:00.000Z");
+  assert.strictEqual(merged.stats.last, "2026-01-03T00:00:00.000Z");
+  assert.deepStrictEqual(merged.conversation.participants, ["@alice", "@bob", "@carol"]);
+  assert.strictEqual(merged.conversation.kind, "group");
+  assert.strictEqual(merged.diagnostics.probes.entries, 4); // summed across frames
+  assert.strictEqual(merged.conversation.id, "42"); // tie → first frame's metadata
+});
+t("single document merges to an equivalent document", () => {
+  const d = CE.buildDocument(
+    [{ sender: "@a", timestamp: null, text: "x", media: [] }],
+    { title: "A (@a)" }
+  );
+  const strip = (x) => JSON.stringify({ ...x, exportedAt: null });
+  assert.strictEqual(strip(CE.mergeDocuments([d])), strip(d));
+});
+t("no frame had messages → null", () => {
+  assert.strictEqual(CE.mergeDocuments([]), null);
+  assert.strictEqual(CE.mergeDocuments([CE.buildDocument([], {})]), null);
+  assert.strictEqual(CE.mergeDocuments(null), null);
+});
+t("leader is the frame with the most messages", () => {
+  const small = CE.buildDocument(
+    [{ sender: "@x", timestamp: null, text: "1", media: [] }],
+    { title: "Small (@x)", id: "s" }
+  );
+  const big = CE.buildDocument(
+    [
+      { sender: "@y", timestamp: null, text: "1", media: [] },
+      { sender: "@y", timestamp: null, text: "2", media: [] }
+    ],
+    { title: "Big (@y)", id: "b" }
+  );
+  const m = CE.mergeDocuments([small, big]);
+  assert.strictEqual(m.conversation.id, "b");
+  assert.strictEqual(m.conversation.title, "Big (@y)");
 });
 
 console.log("\n" + passed + " tests passed" + (failed ? " — WITH FAILURES" : ""));
