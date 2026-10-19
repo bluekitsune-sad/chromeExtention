@@ -215,5 +215,28 @@ t("export filename shape x-dm_<name>_<date>.json", () => {
   assert.match(name, /^x-dm_alice-alice_\d{4}-\d{2}-\d{2}\.json$/);
 });
 
+console.log("conversation id from URL (https://x.com/i/chat/<id>)");
+require("../extract.js");
+t("path /i/chat/<id> → id", () => {
+  assert.strictEqual(CE.extract.conversationIdFromPath("/i/chat/1234567890"), "1234567890");
+});
+t("legacy path /messages/<id> → id", () => {
+  assert.strictEqual(CE.extract.conversationIdFromPath("/messages/987654321"), "987654321");
+});
+t("DM home without id → null", () => {
+  assert.strictEqual(CE.extract.conversationIdFromPath("/i/chat"), null);
+  assert.strictEqual(CE.extract.conversationIdFromPath("/i/chat/"), null);
+});
+t("buildDocument carries meta.id into conversation.id", () => {
+  const d = CE.buildDocument([{ sender: "@a", timestamp: null, text: "x", media: [] }], { id: "1234567890" });
+  assert.strictEqual(d.conversation.id, "1234567890");
+  const d2 = CE.buildDocument([], {});
+  assert.strictEqual(d2.conversation.id, null);
+});
+t("filename falls back to conversation id when title missing", () => {
+  const d = CE.buildDocument([], { id: "1234567890" });
+  assert.match(CE.exportFilename(d), /^x-dm_1234567890_\d{4}-\d{2}-\d{2}\.json$/);
+});
+
 console.log("\n" + passed + " tests passed" + (failed ? " — WITH FAILURES" : ""));
 process.exitCode = failed ? 1 : 0;

@@ -6,7 +6,7 @@
   "host_permissions": ["https://x.com/*"],
   "content_scripts": [
     {
-      "matches": ["https://x.com/messages*"],
+      "matches": ["https://x.com/messages*", "https://x.com/i/chat*"],
       "js": ["organize.js", "extract.js", "content.js"],
       "run_at": "document_idle"
     }

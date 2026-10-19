@@ -41,6 +41,14 @@
     return "@" + seg;
   }
 
+  // "/i/chat/1234567890" or "/messages/1234567890" → "1234567890"
+  // (the DM home is https://x.com/i/chat; opening a DM adds its id to the path)
+  function conversationIdFromPath(pathname) {
+    if (typeof pathname !== "string") return null;
+    const m = pathname.match(/^\/(?:i\/chat|messages)\/([A-Za-z0-9_-]{1,30})/);
+    return m ? m[1] : null;
+  }
+
   function firstMatch(root, candidates) {
     for (const sel of candidates) {
       try {
@@ -247,6 +255,7 @@
   CE.extract = {
     SELECTORS,
     handleFromHref,
+    conversationIdFromPath,
     findEntries,
     findThreadContainer,
     parseEntry,

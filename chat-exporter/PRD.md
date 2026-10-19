@@ -2,7 +2,9 @@
 
 **Version:** 1.0
 **Status:** Draft → in development
-**Platform:** Google Chrome (Manifest V3), target site: `https://x.com/messages*`
+**Platform:** Google Chrome (Manifest V3), target site: `https://x.com/i/chat*`
+(DM home is `https://x.com/i/chat`; opening a DM adds its conversation id to
+the path — `/i/chat/<id>`. Legacy `/messages*` URLs are still matched.)
 **Repo convention:** lives in `chat-exporter/`; root holds docs index only (see root `README.md`).
 
 ---
@@ -77,6 +79,7 @@ read, diff, search, or feed into other tools.
   "exportedAt": "2026-10-19T14:03:11.000Z",
   "source": "https://x.com/messages/1234567890",
   "conversation": {
+    "id": "from the URL path /i/chat/<id> — or null",
     "title": "Alice (@alice) or null",
     "participants": ["@alice", "@bob"],
     "kind": "1:1 | group | unknown (group = 3+ unique participants — own-handle detection is a v2 item)"
@@ -175,7 +178,9 @@ needed and it ties to the button's user gesture.
 ### Manifest permissions
 
 `host_permissions: ["https://x.com/*"]` only. No `storage`, no `downloads`,
-no `tabs`, no background worker. Content script matches `https://x.com/messages*`.
+no `tabs`, no background worker. Content script matches `https://x.com/i/chat*`
+and legacy `https://x.com/messages*`. The conversation id is read from the
+URL path (`/i/chat/<id>`) — no extra permission needed.
 
 ---
 

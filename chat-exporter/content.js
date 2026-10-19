@@ -95,7 +95,7 @@
       let entries = CE.extract.findEntries(document);
       if (!entries.length) {
         throw new Error(
-          "No messages found. Open a DM conversation first (https://x.com/messages) — the export works on the conversation you are viewing."
+          "No messages found. Open a DM conversation first (https://x.com/i/chat) — the export works on the conversation you are viewing."
         );
       }
 
@@ -109,6 +109,7 @@
       const title = CE.extract.findTitle(document);
       const doc = CE.buildDocument(raw, {
         source: location.href.split("?")[0],
+        id: CE.extract.conversationIdFromPath(location.pathname),
         title,
         probes: probeFrom(raw)
       });

@@ -6,6 +6,15 @@
   const $ = (id) => document.getElementById(id);
   const WATCHDOG_MS = 12000; // no message from content for this long → error
 
+  // DMs live at https://x.com/i/chat (open a DM → /i/chat/<conversation-id>);
+  // the older /messages URLs still redirect there and are accepted too.
+  function isChatPage(url) {
+    return (
+      typeof url === "string" &&
+      (url.startsWith("https://x.com/i/chat") || url.startsWith("https://x.com/messages"))
+    );
+  }
+
   let port = null;
   let watchdog = null;
 
@@ -150,8 +159,8 @@
           fail("No active tab found.");
           return;
         }
-        if (!tab.url || !tab.url.startsWith("https://x.com/messages")) {
-          fail("Open an X DM conversation first: https://x.com/messages");
+        if (!isChatPage(tab.url)) {
+          fail("Open an X chat first: https://x.com/i/chat");
           return;
         }
         startExport(tab.id);
@@ -160,11 +169,11 @@
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const tab = tabs && tabs[0];
-      if (tab && tab.url && tab.url.startsWith("https://x.com/messages")) {
+      if (tab && isChatPage(tab.url)) {
         setStatus("Ready — open the conversation you want to export.", "ok");
         $("export").disabled = false;
       } else {
-        setStatus("Open an X DM conversation: https://x.com/messages", "err");
+        setStatus("Open an X chat: https://x.com/i/chat", "err");
       }
     });
   }

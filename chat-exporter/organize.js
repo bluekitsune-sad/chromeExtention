@@ -116,6 +116,7 @@
       exportedAt: new Date().toISOString(),
       source: typeof meta.source === "string" ? meta.source : null,
       conversation: {
+        id: typeof meta.id === "string" && meta.id ? meta.id : null,
         title: typeof meta.title === "string" && meta.title ? meta.title : null,
         participants: people,
         // own-handle detection is a v2 item, so 2 senders is the normal
@@ -150,9 +151,9 @@
 
   function exportFilename(doc) {
     const day = new Date().toISOString().slice(0, 10);
-    const who = sanitizeFilenamePart(
-      (doc && doc.conversation && doc.conversation.title) || "conversation"
-    );
+    const conv = (doc && doc.conversation) || {};
+    // prefer the human title; fall back to the conversation id from the URL
+    const who = sanitizeFilenamePart(conv.title || conv.id || "conversation");
     return "x-dm_" + who + "_" + day + ".json";
   }
 

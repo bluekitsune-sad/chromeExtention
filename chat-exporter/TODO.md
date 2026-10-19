@@ -2,8 +2,8 @@
 
 Work top-down; check off as done. Specs in `PRD.md`, rules in `AGENTS.md`.
 
-**Status (2026-10-19): M1–M5 code-complete.
-Automated checks: 24/24 unit tests, all JS syntax-clean.
+**Status (2026-10-19): M1–M5 code-complete (targets `https://x.com/i/chat`, conversation id captured from URL).
+Automated checks: 29/29 unit tests, all JS syntax-clean.
 Remaining: M6 manual QA in a logged-in Chrome session.**
 
 ## M1 — Scaffold — ✅
@@ -49,7 +49,8 @@ Remaining: M6 manual QA in a logged-in Chrome session.**
 ## M6 — QA & docs
 - [x] Automated: `node --check` all JS; `node test\organize.test.js`
 - [x] README with load-unpacked steps
-- [ ] **Manual (logged-in Chrome):**
+- [ ] **Manual (logged-in Chrome — open chats via `https://x.com/i/chat`):**
+  - [ ] `/i/chat/<id>` conversation opens → popup shows "Ready", id present in exported `conversation.id`
   - [ ] 1:1 chat export: correct sender attribution, chronological order
   - [ ] image message → `"img"`; GIF → `"gif"`; video → `"vid"`; no media in Network tab from extension
   - [ ] media + caption message → placeholder in `text`, words in `caption`

@@ -14,7 +14,7 @@ conversation** as one clean, sorted JSON file.
 
 1. `chrome://extensions` → enable **Developer mode**
 2. **Load unpacked** → select this `chat-exporter/` folder
-3. Open `https://x.com/messages` and a conversation
+3. Open `https://x.com/i/chat` (X's chat section) and a conversation
 
 ## Use
 
@@ -31,7 +31,7 @@ conversation** as one clean, sorted JSON file.
   "schema": "x-dm-export/1",
   "exportedAt": "2026-10-19T14:03:11.000Z",
   "source": "https://x.com/messages/123",
-  "conversation": { "title": "Alice (@alice)", "participants": ["@alice", "@bob"], "kind": "1:1" },
+  "conversation": { "id": "1234567890", "title": "Alice (@alice)", "participants": ["@alice", "@bob"], "kind": "1:1" },
   "stats": { "messageCount": 842, "first": "…", "last": "…" },
   "diagnostics": { "probes": { "entries": 842, "images": 31 }, "undatedMessages": 0, "duplicatesRemoved": 3 },
   "messages": [
@@ -49,6 +49,8 @@ Rules (full spec in `PRD.md`):
   placeholder in `text`, the words preserved in `caption`.
 - Multiple media in one message → `"img + vid"`.
 - Sorted oldest → newest; messages without timestamps go last.
+- `conversation.id` comes from the URL (`https://x.com/i/chat/<id>`); the
+  filename falls back to it when the title can't be read.
 - Re-exporting an unchanged chat yields identical JSON (except `exportedAt`).
 
 ## Debugging
@@ -67,8 +69,8 @@ If an export finds nothing or senders are `null`:
 node test\organize.test.js
 ```
 
-24 dependency-free tests covering classification, dedupe, sorting, the
-document schema, and filenames.
+29 dependency-free tests covering classification, dedupe, sorting, the
+document schema, conversation-id parsing, and filenames.
 
 ## Docs
 
