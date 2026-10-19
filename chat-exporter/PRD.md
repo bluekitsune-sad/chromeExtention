@@ -194,7 +194,7 @@ matches wins, and match counts feed `diagnostics.probes`:
 
 | Touchpoint | Candidates (in order) |
 |---|---|
-| Message entry | `div[data-testid="messageEntry"]`, `[data-testid="message"]`, `[role="listitem"] [role="listitem"]`-scoped fallback |
+| Message entry | `div[data-testid="messageEntry"]`, `[data-testid="message"]`, `[role="listitem"] [role="listitem"]`-scoped fallback, then **runtime discovery** (below) |
 | Thread container | nearest scrollable ancestor of the first entry (`overflow-y` auto/scroll + `scrollHeight > clientHeight`) |
 | Timestamp | `time[datetime]` inside entry |
 | Sender | `a[href^="/"][role="link"]` inside entry → handle from path (excluding `/i/`, `/intent/`, `/messages`) |
@@ -212,8 +212,21 @@ matches wins, and match counts feed `diagnostics.probes`:
   → ignored (part of `text`, not `media`).
 - Everything else content-sized counts as an attachment.
 
-If probes find **zero entries** → export fails with a clear message (nothing
-downloaded, page untouched). If only some fields fail → export proceeds with
+**Runtime discovery fallback (DOM-change insurance).** When every fixed
+candidate misses, `extract.js` derives the entry selector from the live page:
+scope to the container holding the most `time[datetime]` nodes (the
+conversation pane, not the sidebar), then for each timestamp take its
+**topmost single-message ancestor carrying a `data-testid`** — that's the
+message row — and use the most frequent such key (secondary keys, e.g. a
+separate row testid for own messages, are included when ≥60 % as frequent).
+Selectors are cached on success and re-queried per call (safe under
+virtualization). This adapts to `/i/chat` layouts the fixed lists never saw.
+
+If probes **and** discovery find zero entries → export fails with an error
+carrying a one-line **DOM report** (landmark counts, the page's top-15
+`data-testid` vocabulary, ancestor chains of the first timestamps, URL) —
+one pasted error is enough to retune the selector lists. Nothing is
+downloaded, page untouched. If only some fields fail → export proceeds with
 `null`s (fail-soft: a partial archive beats none, and diagnostics say where).
 
 ---

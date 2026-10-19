@@ -63,6 +63,118 @@
 
   // ------------------------------------------------------------- entries
 
+  // Cached selectors discovered at runtime (null = not attempted yet).
+  // Cached only on success — a failed discovery is retried on next call.
+  let DISCOVERED_SELECTORS = null;
+
+  // The conversation pane is the container holding the most time[datetime]
+  // nodes; discovery runs inside it so the sidebar's conversation times
+  // can't poison the result.
+  function messageScope(doc) {
+    let best = null;
+    let bestN = 0;
+    let candidates = [];
+    try {
+      candidates = doc.querySelectorAll("div,section,main,ul,ol");
+    } catch (_) {
+      return null;
+    }
+    for (const el of candidates) {
+      let n = 0;
+      try {
+        n = el.querySelectorAll("time[datetime]").length;
+      } catch (_) {
+        continue;
+      }
+      // >= keeps the innermost element with the maximum count
+      if (n >= bestN && n > 0) {
+        best = el;
+        bestN = n;
+      }
+    }
+    return best;
+  }
+
+  // Derive entry selectors from an unknown DOM: for every message timestamp,
+  // take its TOPMOST single-message ancestor carrying a data-testid (that's
+  // the message row) and pick the most frequent such key. X's layout changes
+  // break fixed selectors — this adapts instead (PRD §6 fallback).
+  function discoverEntrySelectors(doc) {
+    const scope = messageScope(doc);
+    if (!scope) return [];
+    let times = [];
+    try {
+      times = Array.from(scope.querySelectorAll("time[datetime]"));
+    } catch (_) {
+      return [];
+    }
+    if (times.length < 2) return [];
+
+    // pass 1: element → number of timestamps inside it
+    const counts = new Map();
+    for (const t of times) {
+      let el = t.parentElement;
+      let depth = 0;
+      while (el && el !== scope.parentElement && depth < 25) {
+        counts.set(el, (counts.get(el) || 0) + 1);
+        el = el.parentElement;
+        depth += 1;
+      }
+    }
+
+    // pass 2: per timestamp, the topmost testid-ancestor wrapping one message
+    const freq = new Map(); // key → { count, firstTimeIndex, selector }
+    times.forEach((t, timeIndex) => {
+      let el = t.parentElement;
+      let depth = 0;
+      let chosen = null;
+      while (el && el !== scope.parentElement && depth < 25) {
+        const testid = el.getAttribute && el.getAttribute("data-testid");
+        if (testid && counts.get(el) === 1) chosen = el; // keep climbing
+        el = el.parentElement;
+        depth += 1;
+      }
+      if (!chosen) return;
+      const tag = (chosen.tagName || "div").toLowerCase();
+      const key = tag + "|" + chosen.getAttribute("data-testid");
+      const rec =
+        freq.get(key) || {
+          count: 0,
+          firstTimeIndex: timeIndex,
+          selector: tag + '[data-testid="' + chosen.getAttribute("data-testid") + '"]'
+        };
+      rec.count += 1;
+      rec.firstTimeIndex = Math.min(rec.firstTimeIndex, timeIndex);
+      freq.set(key, rec);
+    });
+
+    const ranked = Array.from(freq.values()).sort(
+      (a, b) => b.count - a.count || a.firstTimeIndex - b.firstTimeIndex
+    );
+    const best = ranked[0];
+    if (!best || best.count < Math.max(2, Math.ceil(times.length * 0.4))) return [];
+    // include secondary keys (e.g. own-message rows use a different testid)
+    const threshold = Math.max(2, Math.ceil(best.count * 0.6));
+    const selectors = ranked.filter((r) => r.count >= threshold).map((r) => r.selector);
+    if (globalThis.CE && CE.debug) CE.debug("discovered entry selectors", selectors);
+    return selectors;
+  }
+
+  function discoverEntries(doc) {
+    if (!DISCOVERED_SELECTORS) {
+      DISCOVERED_SELECTORS = discoverEntrySelectors(doc) || [];
+    }
+    const out = new Set();
+    for (const sel of DISCOVERED_SELECTORS) {
+      try {
+        doc.querySelectorAll(sel).forEach((el) => out.add(el));
+      } catch (_) {
+        /* skip broken selector */
+      }
+    }
+    return Array.from(out);
+  }
+
   function findEntries(doc) {
     for (const sel of SELECTORS.entry) {
       try {
@@ -72,7 +184,67 @@
         /* try next */
       }
     }
-    return [];
+    return discoverEntries(doc);
+  }
+
+  // One-line snapshot of the page's structure — included in hard failures so
+  // a single pasted error is enough to retune selectors.
+  function domReport(doc) {
+    const parts = [];
+    try {
+      parts.push("url " + location.pathname);
+    } catch (_) {
+      /* ignore */
+    }
+    for (const sel of [
+      'time[datetime]',
+      '[data-testid="primaryColumn"]',
+      "main",
+      "article",
+      '[role="listitem"]',
+      "img",
+      "video"
+    ]) {
+      let n = 0;
+      try {
+        n = doc.querySelectorAll(sel).length;
+      } catch (_) {
+        /* ignore */
+      }
+      parts.push(sel + "=" + n);
+    }
+    try {
+      const tally = new Map();
+      doc.querySelectorAll("[data-testid]").forEach((el) => {
+        const v = el.getAttribute("data-testid");
+        tally.set(v, (tally.get(v) || 0) + 1);
+      });
+      const top = Array.from(tally.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 15)
+        .map(([k, v]) => k + ":" + v);
+      if (top.length) parts.push("testids " + top.join(", "));
+    } catch (_) {
+      /* ignore */
+    }
+    try {
+      const times = doc.querySelectorAll("time[datetime]");
+      for (let i = 0; i < Math.min(2, times.length); i++) {
+        const chain = [];
+        let el = times[i].parentElement;
+        let depth = 0;
+        while (el && el !== doc.body && depth < 8) {
+          const tid = el.getAttribute && el.getAttribute("data-testid");
+          chain.push((el.tagName || "").toLowerCase() + (tid ? "[" + tid + "]" : ""));
+          el = el.parentElement;
+          depth += 1;
+        }
+        parts.push("chain" + (i + 1) + " " + chain.join(">"));
+      }
+    } catch (_) {
+      /* ignore */
+    }
+    return parts.join(" | ");
   }
 
   // nearest scrollable ancestor of the first entry (DM thread pane);
@@ -260,6 +432,8 @@
     findThreadContainer,
     parseEntry,
     findTitle,
-    probeCounts
+    probeCounts,
+    domReport,
+    discoverEntrySelectors
   };
 })();

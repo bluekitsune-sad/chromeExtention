@@ -3,6 +3,8 @@
 Work top-down; check off as done. Specs in `PRD.md`, rules in `AGENTS.md`.
 
 **Status (2026-10-19): M1–M5 code-complete (targets `https://x.com/i/chat`, conversation id captured from URL).
+Entry detection: fixed selector candidates → runtime auto-discovery fallback;
+zero-entry failures now report the page's DOM vocabulary.
 Automated checks: 29/29 unit tests, all JS syntax-clean.
 Bugfix: popup now pings the content script first and injects it on demand
 (`chrome.scripting`) — stale tabs self-heal, no tab reload needed after
@@ -32,6 +34,11 @@ Remaining: M6 manual QA in a logged-in Chrome session.**
 - [x] sender from profile link (excluding `/i/`, `/intent/`, `/messages`)
 - [x] media classification with avatar + emoji filters
 - [x] probe counts recorded for `diagnostics.probes`
+- [x] runtime entry-selector discovery (pane scoping via most-`time` container,
+      topmost single-message `data-testid` ancestor, frequency ranking) —
+      handles `/i/chat` layouts the fixed lists don't cover
+- [x] `domReport()` one-line DOM snapshot attached to zero-entries errors
+      (+ `console.error`) so a single pasted error retunes selectors
 
 ## M4 — Orchestration — ✅
 - [x] `content.js`: port-based export request from popup

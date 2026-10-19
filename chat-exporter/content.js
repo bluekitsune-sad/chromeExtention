@@ -100,8 +100,15 @@
     try {
       let entries = CE.extract.findEntries(document);
       if (!entries.length) {
+        let report = "";
+        try {
+          report = CE.extract.domReport(document);
+          console.error("[CE] no message entries found. DOM report:", report);
+        } catch (_) {
+          /* report is best effort */
+        }
         throw new Error(
-          "No messages found. Open a DM conversation first (https://x.com/i/chat) — the export works on the conversation you are viewing."
+          "No message bubbles were found — X's chat layout may have changed. Report: " + report
         );
       }
 

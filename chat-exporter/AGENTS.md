@@ -44,7 +44,9 @@ Instructions for any AI agent (or human) implementing the extension defined in
 9. **No dependencies, no build step, no remote code.** Plain scripts loaded in
    manifest order; shared namespace `globalThis.CE`.
 10. **Debug logging** only when `localStorage.CE_DEBUG === "1"` (in the
-    content-script context).
+    content-script context). Exception: the one-shot `console.error` of the
+    DOM report when zero message entries are found — that report is the
+    primary support diagnostic for selector breakage.
 
 ## Conventions
 
@@ -58,7 +60,11 @@ Instructions for any AI agent (or human) implementing the extension defined in
 
 ## Selector notes (from PRD §6 — keep in sync)
 
-- Entries: `div[data-testid="messageEntry"]` first.
+- Entries: `div[data-testid="messageEntry"]` first, then `[data-testid="message"]`
+  — and finally **runtime discovery**: scope to the pane with the most
+  `time[datetime]`, take each timestamp's topmost single-message
+  `data-testid` ancestor, use the most frequent key (PRD §6). This is the
+  path that handles X's newer `/i/chat` layout.
 - Timestamp: `time[datetime]` inside entry.
 - Text: `[data-testid="tweetText"]` / `[data-testid="messageText"]`, else
   cleaned `innerText` minus the `<time>` string.

@@ -65,8 +65,12 @@ If an export finds nothing or senders are `null`:
 1. Set `localStorage.CE_DEBUG = "1"` in the x.com console → `[CE]` logs.
 2. Check the export's `diagnostics.probes` — `entries` is how many message
    nodes the selector probe found.
-3. X changes its DOM regularly — the ordered candidate selectors live at the
-   top of `extract.js`; that's the first place to update.
+3. X changes its DOM regularly. The extension tries fixed candidate selectors
+   first, then **auto-discovers** the message-row selector from the live page
+   (how `time[datetime]` elements are wrapped). If both fail, the error
+   message contains a **`Report:`** line — the page's top `data-testid`s and
+   timestamp ancestor chains. Paste that report here/an issue: it's enough to
+   update the candidate lists in `extract.js` in one pass.
 
 ## Tests
 

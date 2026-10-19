@@ -47,7 +47,7 @@
   function resetWatchdog() {
     clearTimeout(watchdog);
     watchdog = setTimeout(() => {
-      fail("No response from the page — reload the x.com/messages tab and try again.");
+      fail("No response from the page — reload https://x.com/i/chat and try again.");
     }, WATCHDOG_MS);
   }
 
@@ -149,6 +149,7 @@
       } else if (msg.type === "done") {
         stopPort();
         setProgress(null);
+        $("export").disabled = false; // allow re-export from the same popup
         try {
           const doc = msg.doc;
           const name = download(doc);
@@ -185,6 +186,7 @@
 
   function init() {
     $("export").addEventListener("click", () => {
+      $("export").disabled = true; // no double-clicks while attaching/pinging
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         const tab = tabs && tabs[0];
         if (!tab || !tab.id) {
