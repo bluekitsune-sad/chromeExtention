@@ -257,6 +257,96 @@
     return rscExtract(html, handle);
   }
 
+  // ------------------------------------------------------------- about probe
+  // Diagnostic for X's "About this account" section (shown when you open a
+  // profile): it reveals where an account is BASED (inferred from IP/signals
+  // — NOT the self-declared `location` field), whether it used
+  // country-specific app stores, join month/year and username changes.
+  // Before writing any rule for it we must see where the data lives.
+  // The probe answers two questions (Test fetch output):
+  //  1) do the section's visible labels appear in the fetched profile HTML?
+  //     yes → data is embedded in the payload we already fetch;
+  //     no  → it arrives via a separate XHR → endpoint discovery needed.
+  //  2) which payload keys sit near THIS user's screen_name anchors?
+  //     → unknown fields (country/device/…) become visible for extraction.
+  // Pure string work: no DOM, no fetch, no hardcoded filter values
+  // (keywords are diagnostics, not rule values — AGENTS hard rule 1).
+  const ABOUT_KEYWORDS = [
+    "about this account",
+    "based in",
+    "account is based",
+    "app store",
+    "google play",
+    "country or region",
+    "may have used",
+    "proxy",
+    "vpn",
+    "logged in",
+    "device",
+    "username change",
+    "changed their username",
+    "joined",
+    "inferred"
+  ];
+
+  function cleanExcerpt(s, at, len) {
+    const start = Math.max(0, at - 80);
+    const end = Math.min(s.length, at + len + 80);
+    return s.slice(start, end).replace(/\s+/g, " ").trim();
+  }
+
+  function probeAbout(pageHtml, handle) {
+    const out = { htmlBytes: 0, anchors: 0, keywords: [], keys: [] };
+    try {
+      if (!pageHtml || typeof pageHtml !== "string") return out;
+      out.htmlBytes = pageHtml.length;
+
+      // 1) visible-label hits (case-insensitive; ≤3 excerpts, ≤999 counted)
+      const lower = pageHtml.toLowerCase();
+      for (const kw of ABOUT_KEYWORDS) {
+        let at = lower.indexOf(kw);
+        if (at === -1) continue;
+        let count = 0;
+        const excerpts = [];
+        while (at !== -1 && count < 3) {
+          count += 1;
+          excerpts.push(cleanExcerpt(pageHtml, at, kw.length));
+          at = lower.indexOf(kw, at + kw.length);
+        }
+        while (at !== -1 && count < 999) {
+          count += 1;
+          at = lower.indexOf(kw, at + kw.length);
+        }
+        out.keywords.push({ kw, count, excerpts });
+      }
+
+      // 2) payload keys within ±1500 chars of THIS user's screen_name anchors
+      const h = escapeRe(String(handle || "").replace(/^@+/, ""));
+      if (h) {
+        const anchors = [];
+        for (const re of [
+          new RegExp("screen_name\\s*:\\s*\"" + h + "\"", "gi"),
+          new RegExp("\"screen_name\"\\s*:\\s*\"" + h + "\"", "gi")
+        ]) {
+          let m;
+          while ((m = re.exec(pageHtml)) !== null) anchors.push(m.index);
+        }
+        out.anchors = anchors.length;
+        const keys = new Set();
+        const keyRe =
+          /(?:"([A-Za-z_][A-Za-z0-9_]{1,50})"|([A-Za-z_][A-Za-z0-9_]{1,50}))\s*:\s*(?:"|\d|true|false|null|\[|\{)/g;
+        for (const at of anchors) {
+          const slice = pageHtml.slice(Math.max(0, at - 1500), at + 1500);
+          for (const k of slice.matchAll(keyRe)) keys.add(k[1] || k[2]);
+        }
+        out.keys = [...keys].sort().slice(0, 120);
+      }
+    } catch (e) {
+      debug("probeAbout failed", e);
+    }
+    return out;
+  }
+
   // ------------------------------------------------------------- fetching
 
   let queue = [];
@@ -412,5 +502,5 @@
   }
 
   globalThis.XFF = globalThis.XFF || {};
-  globalThis.XFF.profileCache = { getProfile, clearAll, parseProfileHtml, cacheKey };
+  globalThis.XFF.profileCache = { getProfile, clearAll, parseProfileHtml, cacheKey, probeAbout };
 })();

@@ -60,6 +60,11 @@ Prefer test IDs over classes; X's class hashes change often:
   in `profile-cache.js` handles both RSC and quoted-JSON forms. Any change to
   it MUST keep `node test/parse-sample.validation.js` green (validated against
   real captured x.com pages).
+- About-section fields (inferred base country, app store, …): source is
+  **unconfirmed** — run the `probeAbout` output (popup → Test fetch →
+  `ABOUT PROBE`) and follow TODO "Round 3" before parsing anything new.
+  Never guess field names, and keep `probeAbout` diagnostics-only (not rule
+  values).
 
 If a selector stops matching, fail open and log — do not guess wildly.
 

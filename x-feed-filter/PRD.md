@@ -243,6 +243,24 @@ Same cache path as location (one profile fetch serves all rules):
 
 ## 9. Future (v2+)
 
+- **About-section filtering (staged, round 3 — recon shipped, source
+  unconfirmed).** Rules based on X's "About this account" section: the
+  account's **base country** (inferred by X from IP/signals — *distinct*
+  from the self-declared profile `location` v1 filters on), the
+  **country-specific app store** it connects from, join month/year and
+  username-change count. Staged because the data source must be proven first:
+  1. **Recon** ✅ — `probeAbout()` scans fetched profile HTML for the
+     section's labels and inventories payload keys near the author
+     (popup → Test fetch → `ABOUT PROBE`).
+  2. **Confirm source** — labels present in output → data is embedded in the
+     profile payload (extend `rscExtract`/`pickFields`); absent → separate
+     XHR (capture it via DevTools Network while opening the About panel).
+  3. **Extract** new fields (`baseCountry`, `appStore`, …) through
+     `profile-cache.js` — one fetch per author, TTLs and throttling unchanged.
+  4. **Rules** per AGENTS "Each new rule type": pure functions in `filter.js`
+     registered in `RULES`, settings keys + defaults, popup section, this
+     table's rule rows — values from `chrome.storage` only, unknown/failed
+     profiles fail open (visible).
 - Post geotag rule (`Filter by post place`).
 - Whitelist that overrides all rules (e.g. always show followed accounts).
 - Per-rule enable toggles + "why was this hidden?" debug tooltip.

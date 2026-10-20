@@ -205,4 +205,55 @@ t("unparseable html → null (fail open)", () => {
   assert.strictEqual(profileCache.parseProfileHtml(null, "nobody"), null);
 });
 
+console.log("about probe (About-this-account reconnaissance)");
+t("finds visible labels and inventories payload keys near the user", () => {
+  const html =
+    "<html>" +
+    '"screen_name":"someuser"' +
+    ' country:"PK",device_info:"iOS",joined_label:"Joined March 2014",' +
+    "<section>About this account · Based in Pakistan · App Store</section>" +
+    "</html>";
+  const probe = profileCache.probeAbout(html, "someuser");
+  assert.strictEqual(probe.htmlBytes, html.length);
+  assert.strictEqual(probe.anchors, 1);
+  const kws = probe.keywords.map((k) => k.kw);
+  assert.ok(kws.includes("about this account"), "label 'about this account' found");
+  assert.ok(kws.includes("based in"), "label 'based in' found");
+  assert.ok(kws.includes("app store"), "label 'app store' found");
+  const hit = probe.keywords.find((k) => k.kw === "based in");
+  assert.strictEqual(hit.count, 1);
+  assert.ok(hit.excerpts[0].includes("Pakistan"), "excerpt carries context");
+  // key inventory is generic — unknown fields become visible (no key allowlist)
+  assert.ok(probe.keys.includes("country"));
+  assert.ok(probe.keys.includes("device_info"));
+  assert.ok(probe.keys.includes("screen_name"));
+});
+t("label matching is case-insensitive and counted with excerpts capped", () => {
+  const html = 'screen_name:"u2" APP STORE then App Store then app store then APP STORE';
+  const probe = profileCache.probeAbout(html, "u2");
+  const hit = probe.keywords.find((k) => k.kw === "app store");
+  assert.ok(hit, "hit exists");
+  assert.strictEqual(hit.count, 4);
+  assert.strictEqual(hit.excerpts.length, 3); // ≤3 excerpts, all occurrences counted
+  assert.ok(hit.excerpts[0].toUpperCase().includes("APP STORE"));
+});
+t("works for quoted and unquoted anchors alike", () => {
+  const q = profileCache.probeAbout('a "screen_name":"quoted_u" location:"L"', "quoted_u");
+  const u = profileCache.probeAbout("a screen_name:\"unquoted_u\" location:\"L\"", "unquoted_u");
+  assert.strictEqual(q.anchors, 1);
+  assert.strictEqual(u.anchors, 1);
+  assert.ok(q.keys.includes("location"));
+  assert.ok(u.keys.includes("location"));
+});
+t("fails open to an empty shape on garbage input", () => {
+  for (const bad of [null, undefined, "", 42]) {
+    const probe = profileCache.probeAbout(bad, "x");
+    assert.strictEqual(probe.htmlBytes, 0);
+    assert.deepStrictEqual(probe.keywords, []);
+    assert.deepStrictEqual(probe.keys, []);
+    assert.strictEqual(probe.anchors, 0);
+  }
+  assert.strictEqual(profileCache.probeAbout("<html>zz</html>", "nobody").anchors, 0);
+});
+
 console.log("\n" + passed + " assertions-groups passed" + (process.exitCode ? " (WITH FAILURES)" : ""));

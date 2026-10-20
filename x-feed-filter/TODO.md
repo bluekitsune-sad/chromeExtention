@@ -3,8 +3,10 @@
 Work top-down. Check off items as they're completed. Details in `PRD.md`,
 build rules in `AGENTS.md`.
 
-**Status (2026-10-10): M1–M5 code-complete + round-2 fixes shipped.
-Automated checks: 30/30 unit tests, 5/5 real-page parser validations, all JS syntax-clean.
+**Status (2026-10-20): M1–M5 code-complete + round-2 fixes shipped.
+Round 3 (About-section filtering): recon probe shipped — blocked on the user's
+Test-fetch output to confirm where X's About data lives (see Round 3 section).
+Automated checks: 34/34 unit tests, 5/5 real-page parser validations, all JS syntax-clean.
 Remaining: M6 manual QA in Chrome.**
 
 ## M1 — Scaffold — ✅ code complete
@@ -67,6 +69,39 @@ Remaining: M6 manual QA in Chrome.**
       failed lookups with error text + retry hint
 - [x] Debug logs for every profile fetch result and missing-profile fail-open
 - [x] Tests extended: 30/30 unit (incl. 7 allowlist-mode cases) + parser validation suite
+
+## Round 3 (2026-10-20): About-section filtering — recon first ✅ probe shipped
+
+Feature request: filter by the profile's **"About this account"** section —
+where the account is *based* (X-inferred country — NOT the self-declared
+`location` we already filter) and the **country-specific app store** it uses,
+plus join/username-change metadata. Data source must be confirmed before any
+rule is written (PRD §9).
+
+- [x] `probeAbout()` in `profile-cache.js` (pure): visible-label scan
+      (`about this account`, `based in`, `app store`, `proxy`, `vpn`,
+      `joined`, …) + generic payload-key inventory within ±1500 chars of the
+      author's `screen_name` anchors — unknown fields become visible, no
+      key allowlist
+- [x] Popup **Test fetch** shows an `ABOUT PROBE` block: anchors, keys near
+      the handle, label hits with excerpts — and an inline diagnosis:
+      `label hits: (none …)` ⇒ section data arrives via a separate XHR
+- [x] +4 unit tests (labels+keys, case-insensitive counts/excerpt cap,
+      quoted+unquoted anchors, garbage fail-open) → 34 assertions-groups
+- [ ] **⚠ User recon (blocks the rest):** reload the extension → popup →
+      Test fetch on a handle whose profile *shows the About section* →
+      paste the `ABOUT PROBE` block **and** the section's exact visible
+      wording (e.g. "Based in Pakistan · App Store · Joined Mar 2014"),
+      noting whether it's visible inline or only behind a ⋯-menu modal
+- [ ] Decide source from that output: embedded payload (→ extend
+      `rscExtract`/`pickFields`) vs separate XHR (→ DevTools Network capture
+      when opening the About panel)
+- [ ] Extract new fields (`baseCountry`, `appStore`, …) through the existing
+      cache — one fetch per author unchanged
+- [ ] Rules per AGENTS checklist: pure `about*` rules in `filter.js`,
+      `RULES` registration, settings keys + defaults, popup UI section, PRD
+      rule-table row (hide/only modes mirroring `locationMode`)
+- [ ] Tests for the new rules; full suite green
 
 ## M6 — QA & docs
 - [x] Automated: `node --check` all 6 JS files, `JSON.parse` manifest — pass

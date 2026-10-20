@@ -361,17 +361,30 @@ async function testFetchProfile() {
     const esc = handle.replace(/[^\w]/g, "");
     const anchorCount = (html.match(new RegExp("screen_name\\s*:\\s*\"" + esc + "\"", "gi")) || []).length;
     const parsed = globalThis.XFF.profileCache.parseProfileHtml(html, handle);
+    const probe = globalThis.XFF.profileCache.probeAbout(html, handle);
     const anchorIdx = html.search(new RegExp("screen_name\\s*:\\s*\"" + esc + "\"", "i"));
     const excerpt =
       anchorIdx >= 0
         ? html.slice(Math.max(0, anchorIdx - 300), anchorIdx + 1200)
         : html.slice(0, 1500);
+    const probeLines = probe.keywords.map(
+      (k) => "  " + k.kw + " ×" + k.count + " :: " + (k.excerpts[0] || "")
+    );
     out.textContent = [
       "status: " + res.status,
       "redirected: " + res.redirected + (res.redirected ? " → " + res.url : ""),
       "html bytes: " + html.length,
       "screen_name anchors for @" + handle + ": " + anchorCount,
       "parser result: " + JSON.stringify(parsed),
+      "",
+      "— ABOUT PROBE (About-this-account section: where does it live?) —",
+      "anchors: " + probe.anchors,
+      "payload keys near @" + handle + ": " + (probe.keys.length ? probe.keys.join(", ") : "(none found)"),
+      "label hits: " +
+        (probe.keywords.length
+          ? ""
+          : "(none — section data likely arrives via a separate XHR, not in the profile HTML)"),
+      ...probeLines,
       "",
       "— excerpt around first anchor (copy this to debug) —",
       excerpt
